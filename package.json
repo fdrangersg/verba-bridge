@@ -1,0 +1,26 @@
+{
+  "name": "verba-bridge",
+  "version": "1.0.0",
+  "description": "Real-time bilingual subtitle bridge for sacrament meetings",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node src/server.js",
+    "check": "node --check src/server.js && node --check src/session/sessionController.js && node --check src/asr/googleStreamingAsr.js && node --check src/translation/googleTranslator.js"
+  },
+  "keywords": [
+    "subtitle",
+    "translation",
+    "asr",
+    "church",
+    "realtime"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "@google-cloud/speech": "^6.6.1",
+    "@google-cloud/translate": "^8.5.0",
+    "dotenv": "^16.4.5",
+    "node-record-lpcm16": "^1.0.1",
+    "ws": "^8.18.0"
+  }
+}

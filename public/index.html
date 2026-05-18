@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>VerbaBridge</title>
+    <style>
+      :root {
+        --bg: #080a10;
+        --bg-soft: #0f1622;
+        --panel: rgba(11, 14, 22, 0.82);
+        --panel-strong: rgba(16, 21, 32, 0.96);
+        --border: rgba(255, 255, 255, 0.14);
+        --text: #f8fbff;
+        --muted: #93a7c2;
+        --accent: #4cd2ff;
+        --accent-strong: #2eb4ff;
+        --ok: #53f09f;
+        --warn: #ffd479;
+        --error: #ff7a7a;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        height: 100%;
+      }
+
+      body {
+        margin: 0;
+        color: var(--text);
+        font-family: 'Avenir Next', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+        background:
+          radial-gradient(1300px 700px at 8% -10%, #1a2538 0%, transparent 60%),
+          radial-gradient(900px 600px at 95% 0%, #13243a 0%, transparent 55%),
+          linear-gradient(180deg, var(--bg-soft) 0%, var(--bg) 65%);
+      }
+
+      .layout {
+        height: 100%;
+        display: grid;
+        grid-template-rows: auto 1fr;
+      }
+
+      .controls {
+        position: sticky;
+        top: 0;
+        z-index: 5;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 16px;
+        backdrop-filter: blur(12px);
+        background: rgba(6, 10, 16, 0.86);
+        border-bottom: 1px solid var(--border);
+      }
+
+      .brand {
+        display: flex;
+        align-items: baseline;
+        gap: 8px;
+        margin-right: 8px;
+      }
+
+      .brand strong {
+        letter-spacing: 0.04em;
+        font-size: 17px;
+      }
+
+      .brand span {
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .group {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      label,
+      .badge,
+      select,
+      button {
+        font-size: 14px;
+      }
+
+      .badge {
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        padding: 4px 10px;
+        color: var(--muted);
+      }
+
+      .badge.live {
+        color: var(--ok);
+        border-color: rgba(83, 240, 159, 0.5);
+      }
+
+      .badge.error {
+        color: var(--error);
+        border-color: rgba(255, 122, 122, 0.55);
+      }
+
+      select,
+      button {
+        border-radius: 10px;
+        border: 1px solid var(--border);
+        color: var(--text);
+        background: rgba(255, 255, 255, 0.04);
+        padding: 8px 12px;
+      }
+
+      button {
+        cursor: pointer;
+        transition: transform 140ms ease, border-color 140ms ease, background 140ms ease;
+      }
+
+      button:hover {
+        border-color: rgba(255, 255, 255, 0.38);
+        background: rgba(255, 255, 255, 0.08);
+      }
+
+      button:active {
+        transform: translateY(1px);
+      }
+
+      button:disabled {
+        cursor: not-allowed;
+        opacity: 0.55;
+      }
+
+      .log {
+        color: var(--error);
+        font-size: 13px;
+        min-height: 20px;
+      }
+
+      .stage {
+        min-height: 0;
+        display: grid;
+        grid-template-rows: 1fr auto;
+        gap: 14px;
+        padding: 14px;
+      }
+
+      .history-shell {
+        min-height: 0;
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        background: var(--panel);
+        display: grid;
+        grid-template-rows: auto 1fr;
+        overflow: hidden;
+      }
+
+      .history-head {
+        padding: 10px 14px;
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        color: var(--muted);
+        letter-spacing: 0.03em;
+        font-size: 12px;
+      }
+
+      .jump-btn {
+        font-size: 12px;
+        padding: 6px 10px;
+        border-radius: 999px;
+        border: 1px solid rgba(76, 210, 255, 0.4);
+        color: var(--accent);
+        background: rgba(76, 210, 255, 0.1);
+      }
+
+      .history-viewport {
+        min-height: 0;
+        overflow-y: auto;
+        overflow-x: hidden;
+        padding: 12px;
+        scroll-behavior: smooth;
+      }
+
+      .subtitle-list {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .subtitle-item {
+        border-radius: 14px;
+        padding: 12px 14px;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.03);
+        animation: fadeUp 260ms ease;
+      }
+
+      .subtitle-original {
+        color: #dce8f8;
+        opacity: 0.92;
+        font-size: clamp(23px, 2vw, 31px);
+        line-height: 1.35;
+        font-family: 'Avenir Next', 'PingFang SC', 'Hiragino Sans GB', sans-serif;
+      }
+
+      .subtitle-translated {
+        margin-top: 6px;
+        color: #ffffff;
+        font-size: clamp(32px, 3vw, 48px);
+        line-height: 1.2;
+        font-weight: 700;
+        letter-spacing: 0.01em;
+        font-family: 'Songti SC', 'STSong', 'Noto Serif SC', serif;
+      }
+
+      .subtitle-meta {
+        margin-top: 8px;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .live-shell {
+        border: 1px solid rgba(76, 210, 255, 0.33);
+        border-radius: 16px;
+        padding: 10px 14px 14px;
+        background: linear-gradient(180deg, rgba(27, 40, 62, 0.55) 0%, rgba(9, 14, 22, 0.92) 100%);
+        box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.24);
+      }
+
+      .live-top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .live-label {
+        font-size: 12px;
+        color: #b6d9ff;
+        letter-spacing: 0.05em;
+      }
+
+      .live-state {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        color: var(--warn);
+        font-size: 12px;
+      }
+
+      .live-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 999px;
+        background: var(--warn);
+        box-shadow: 0 0 0 0 rgba(255, 212, 121, 0.5);
+      }
+
+      .live-shell.active .live-dot {
+        background: var(--ok);
+        animation: pulse 1.5s infinite;
+      }
+
+      .live-shell.active .live-state {
+        color: var(--ok);
+      }
+
+      .interim {
+        margin-top: 8px;
+        min-height: 40px;
+        font-size: clamp(24px, 2.4vw, 38px);
+        line-height: 1.32;
+        color: #f5f9ff;
+        text-wrap: balance;
+        font-family: 'Avenir Next', 'PingFang SC', 'Hiragino Sans GB', sans-serif;
+      }
+
+      .interim.placeholder {
+        color: #86a2c4;
+      }
+
+      @keyframes pulse {
+        0% {
+          box-shadow: 0 0 0 0 rgba(83, 240, 159, 0.48);
+        }
+        70% {
+          box-shadow: 0 0 0 11px rgba(83, 240, 159, 0);
+        }
+        100% {
+          box-shadow: 0 0 0 0 rgba(83, 240, 159, 0);
+        }
+      }
+
+      @keyframes fadeUp {
+        from {
+          opacity: 0;
+          transform: translateY(8px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      @media (max-width: 900px) {
+        .controls {
+          align-items: flex-start;
+        }
+
+        .subtitle-original {
+          font-size: 20px;
+        }
+
+        .subtitle-translated {
+          font-size: 30px;
+        }
+
+        .interim {
+          font-size: 25px;
+        }
+      }
+
+      @media (max-width: 700px) {
+        .controls {
+          flex-direction: column;
+        }
+
+        .group {
+          width: 100%;
+          flex-wrap: wrap;
+        }
+
+        .stage {
+          padding: 10px;
+          gap: 10px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="layout">
+      <section class="controls">
+        <div class="brand">
+          <strong>VerbaBridge</strong>
+          <span>Realtime Subtitle Console</span>
+        </div>
+
+        <div class="group">
+          <label for="direction">Direction</label>
+          <select id="direction">
+            <option value="EN_TO_ZH">English -> Chinese</option>
+            <option value="ZH_TO_EN">Chinese -> English</option>
+          </select>
+          <button id="startBtn">Start Session</button>
+          <button id="stopBtn">Stop Session</button>
+        </div>
+
+        <div class="group">
+          <span id="sessionBadge" class="badge">Session Stopped</span>
+          <span id="socketBadge" class="badge">WebSocket Offline</span>
+          <span id="latencyBadge" class="badge">Latency: --</span>
+          <span id="clientsBadge" class="badge">Viewers: 0</span>
+        </div>
+
+        <div id="errorLog" class="log"></div>
+      </section>
+
+      <section class="stage">
+        <section class="history-shell">
+          <div class="history-head">
+            <span>Confirmed Subtitles</span>
+            <button id="jumpLatestBtn" class="jump-btn" hidden>Jump to latest</button>
+          </div>
+          <div id="historyViewport" class="history-viewport">
+            <div id="subtitleList" class="subtitle-list"></div>
+          </div>
+        </section>
+
+        <section id="liveShell" class="live-shell">
+          <div class="live-top">
+            <span class="live-label">IN PROGRESS</span>
+            <span class="live-state">
+              <span class="live-dot"></span>
+              <span id="liveStateText">Idle</span>
+            </span>
+          </div>
+          <div id="interimText" class="interim placeholder">Waiting for speech...</div>
+        </section>
+      </section>
+    </main>
+
+    <script>
+      const directionSelect = document.getElementById('direction');
+      const startBtn = document.getElementById('startBtn');
+      const stopBtn = document.getElementById('stopBtn');
+      const sessionBadge = document.getElementById('sessionBadge');
+      const socketBadge = document.getElementById('socketBadge');
+      const latencyBadge = document.getElementById('latencyBadge');
+      const clientsBadge = document.getElementById('clientsBadge');
+      const subtitleList = document.getElementById('subtitleList');
+      const historyViewport = document.getElementById('historyViewport');
+      const jumpLatestBtn = document.getElementById('jumpLatestBtn');
+      const interimText = document.getElementById('interimText');
+      const liveShell = document.getElementById('liveShell');
+      const liveStateText = document.getElementById('liveStateText');
+      const errorLog = document.getElementById('errorLog');
+
+      const maxItems = 120;
+      const interimPlaceholder = 'Waiting for speech...';
+
+      let ws = null;
+      let busy = false;
+      let running = false;
+      let autoFollow = true;
+
+      function setBusyState(nextBusy) {
+        busy = nextBusy;
+        directionSelect.disabled = nextBusy;
+        startBtn.disabled = nextBusy || running;
+        stopBtn.disabled = nextBusy || !running;
+      }
+
+      function setError(message) {
+        errorLog.textContent = message || '';
+      }
+
+      function isNearBottom(element, threshold = 72) {
+        const remaining = element.scrollHeight - element.scrollTop - element.clientHeight;
+        return remaining <= threshold;
+      }
+
+      function updateJumpButton() {
+        jumpLatestBtn.hidden = autoFollow;
+      }
+
+      function scrollToLatest(force = false) {
+        if (!force && !autoFollow) {
+          return;
+        }
+        historyViewport.scrollTop = historyViewport.scrollHeight;
+      }
+
+      function setInterimText(text) {
+        if (!text) {
+          interimText.textContent = interimPlaceholder;
+          interimText.classList.add('placeholder');
+          return;
+        }
+
+        interimText.textContent = text;
+        interimText.classList.remove('placeholder');
+      }
+
+      async function apiRequest(path, payload) {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000);
+        const options = {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          signal: controller.signal,
+        };
+
+        if (payload) {
+          options.body = JSON.stringify(payload);
+        }
+
+        try {
+          const response = await fetch(path, options);
+          const data = await response.json();
+
+          if (!response.ok) {
+            throw new Error(data.error || 'Request failed');
+          }
+
+          return data;
+        } catch (error) {
+          if (error.name === 'AbortError') {
+            throw new Error('Request timed out after 10s. Check backend logs.');
+          }
+          throw error;
+        } finally {
+          clearTimeout(timeoutId);
+        }
+      }
+
+      async function fetchStatus() {
+        const response = await fetch('/api/status');
+        const status = await response.json();
+        applyStatus(status);
+      }
+
+      function applyStatus(status) {
+        running = Boolean(status.running);
+        directionSelect.value = status.direction;
+
+        if (running) {
+          sessionBadge.textContent = 'Session Running';
+          sessionBadge.className = 'badge live';
+          liveShell.classList.add('active');
+          liveStateText.textContent = 'Listening';
+        } else {
+          sessionBadge.textContent = 'Session Stopped';
+          sessionBadge.className = 'badge';
+          liveShell.classList.remove('active');
+          liveStateText.textContent = 'Idle';
+          setInterimText('');
+        }
+
+        if (typeof status.averageLatencyMs === 'number') {
+          latencyBadge.textContent = `Latency: ${status.averageLatencyMs} ms`;
+        } else {
+          latencyBadge.textContent = 'Latency: --';
+        }
+
+        setBusyState(false);
+      }
+
+      function appendSubtitle(payload) {
+        const item = document.createElement('article');
+        item.className = 'subtitle-item';
+
+        const original = document.createElement('div');
+        original.className = 'subtitle-original';
+        original.textContent = payload.originalText;
+
+        const translated = document.createElement('div');
+        translated.className = 'subtitle-translated';
+        translated.textContent = payload.translatedText;
+
+        const meta = document.createElement('div');
+        meta.className = 'subtitle-meta';
+        meta.textContent = `${new Date(payload.timestamp).toLocaleTimeString()} | ${payload.direction} | ${payload.latencyMs} ms`;
+
+        item.appendChild(original);
+        item.appendChild(translated);
+        item.appendChild(meta);
+        subtitleList.appendChild(item);
+
+        while (subtitleList.children.length > maxItems) {
+          subtitleList.removeChild(subtitleList.firstChild);
+        }
+
+        scrollToLatest();
+      }
+
+      function connectWebSocket() {
+        const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
+        ws = new WebSocket(`${protocol}://${window.location.host}/ws`);
+
+        ws.addEventListener('open', () => {
+          socketBadge.textContent = 'WebSocket Online';
+          socketBadge.className = 'badge live';
+          setError('');
+        });
+
+        ws.addEventListener('close', () => {
+          socketBadge.textContent = 'WebSocket Offline';
+          socketBadge.className = 'badge error';
+          setTimeout(connectWebSocket, 1500);
+        });
+
+        ws.addEventListener('message', (event) => {
+          let message;
+          try {
+            message = JSON.parse(event.data);
+          } catch (parseError) {
+            return;
+          }
+
+          if (message.type === 'subtitle') {
+            setInterimText('');
+            appendSubtitle(message.payload);
+            return;
+          }
+
+          if (message.type === 'interim') {
+            setInterimText(message.payload.text || '');
+            return;
+          }
+
+          if (message.type === 'status') {
+            applyStatus(message.payload);
+            return;
+          }
+
+          if (message.type === 'connection') {
+            clientsBadge.textContent = `Viewers: ${message.payload.count}`;
+            return;
+          }
+
+          if (message.type === 'error') {
+            setError(message.payload.message || 'Unexpected error');
+          }
+        });
+      }
+
+      historyViewport.addEventListener('scroll', () => {
+        autoFollow = isNearBottom(historyViewport);
+        updateJumpButton();
+      });
+
+      jumpLatestBtn.addEventListener('click', () => {
+        autoFollow = true;
+        scrollToLatest(true);
+        updateJumpButton();
+      });
+
+      startBtn.addEventListener('click', async () => {
+        setError('');
+        setBusyState(true);
+        sessionBadge.textContent = 'Starting Session...';
+        sessionBadge.className = 'badge';
+        try {
+          const status = await apiRequest('/api/session/start');
+          applyStatus(status);
+        } catch (error) {
+          setBusyState(false);
+          sessionBadge.textContent = 'Session Stopped';
+          sessionBadge.className = 'badge';
+          setError(error.message);
+        }
+      });
+
+      stopBtn.addEventListener('click', async () => {
+        setError('');
+        setBusyState(true);
+        sessionBadge.textContent = 'Stopping Session...';
+        sessionBadge.className = 'badge';
+        try {
+          const status = await apiRequest('/api/session/stop');
+          applyStatus(status);
+        } catch (error) {
+          setBusyState(false);
+          setError(error.message);
+        }
+      });
+
+      directionSelect.addEventListener('change', async (event) => {
+        setError('');
+        setBusyState(true);
+        try {
+          const status = await apiRequest('/api/session/direction', {
+            direction: event.target.value,
+          });
+          applyStatus(status);
+        } catch (error) {
+          setBusyState(false);
+          setError(error.message);
+        }
+      });
+
+      fetchStatus().catch((error) => {
+        setError(error.message);
+      });
+      updateJumpButton();
+      setInterimText('');
+      connectWebSocket();
+    </script>
+  </body>
+</html>
