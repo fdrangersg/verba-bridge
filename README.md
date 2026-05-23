@@ -148,6 +148,46 @@ This project splits the two concerns of term handling between layers that each d
 
 Earlier versions of this repo did post-translation string replacement locally. That approach was removed because it only worked when Google left source-language tokens in the output, which rarely happens for terms Google already knows.
 
+## Cloud Translation Glossary
+
+Local `config/glossary.csv` is used for ASR phrase hints. If you also want
+**server-side translation enforcement** (e.g. force "Sacrament" → "圣餐"
+even when Google's default would differ), provision a Cloud Translation
+glossary using the included script:
+
+```bash
+./scripts/sync-cloud-glossary.sh
+```
+
+The script reads `.env`, transforms `config/glossary.csv` into Google's
+equivalent-term-set format, manages the GCS staging bucket and IAM
+binding for the service account, deletes any existing glossary with the
+same id, creates a fresh one from the uploaded file, and verifies the
+entry count.
+
+Required `.env` values before running:
+
+- `TRANSLATION_PROJECT_ID` — your GCP project id or number
+- `TRANSLATION_LOCATION` — a region such as `us-central1` (NOT `global`;
+  glossaries are regional resources)
+- `TRANSLATION_GLOSSARY_ID` — the name you want for the glossary resource
+- `GOOGLE_APPLICATION_CREDENTIALS` — path to your service account JSON
+
+Optional:
+
+- `GLOSSARY_BUCKET` — GCS bucket name (defaults to
+  `verba-bridge-glossary-<project>`)
+- `GLOSSARY_LANGUAGES` — BCP-47 codes (default `en,zh-CN`)
+
+Re-run the script any time you edit `config/glossary.csv` to push the
+updated terms to Cloud Translation. The operation is idempotent and
+safe to run repeatedly.
+
+Requirements on the host: `bash`, `gcloud` SDK (`gcloud` + `gsutil`),
+`python3`, `curl`. The user running the script must either be
+authenticated via `gcloud auth login` or the script will fall back to
+the service account key for authentication.
+
 ## Session Transcripts
 
 Every session writes a plain-text transcript to `RECORDING_DIR` (default `recordings/`).
