@@ -4,7 +4,7 @@ Real-time bilingual subtitle system for sacrament meetings.
 
 Pipeline:
 
-Audio Input -> Google Streaming ASR -> Terminology Correction -> Google Translation -> Terminology Enforcement -> WebSocket Broadcast -> Browser Display
+Audio Input -> Google Streaming ASR (with phrase hints) -> Google Translation -> WebSocket Broadcast -> Browser Display
 
 This repo is intentionally minimal, layered, and maintainable.
 
@@ -15,8 +15,8 @@ This repo is intentionally minimal, layered, and maintainable.
 - Direction switching:
   - `EN_TO_ZH` (English -> Chinese)
   - `ZH_TO_EN` (Chinese -> English)
-- Glossary-driven terminology enforcement from `config/glossary.csv`
-- Optional Cloud Translation glossary support
+- Glossary-driven ASR phrase hints from `config/glossary.csv` (improves recognition of proper nouns)
+- Optional Cloud Translation glossary for server-side term consistency
 - Local WebSocket broadcast + browser subtitle display
 - Simple control panel:
   - Start/Stop session
@@ -35,7 +35,7 @@ verba-bridge/
       googleTranslator.js
     glossary/
       glossaryLoader.js
-      terminologyEnforcer.js
+      glossaryHints.js
     websocket/
       subtitleHub.js
     session/
@@ -130,12 +130,19 @@ http://localhost:3000
 ## Data Flow (Layered)
 
 1. Audio Input Layer: microphone/mixer audio is captured with `node-record-lpcm16`.
-2. ASR Layer: Google streaming recognition emits interim/final transcripts.
-3. Terminology Correction Layer: rule-based source cleanup from local glossary.
-4. Translation Layer: Google Translation API (optionally with Cloud glossary).
-5. Terminology Enforcement Layer: strict post-translation replacements from local glossary.
-6. Broadcast Layer: subtitles sent via WebSocket.
-7. Display Layer: browser control panel + large subtitle display.
+2. ASR Layer: Google streaming recognition emits interim/final transcripts. Local glossary entries are passed as phrase hints to bias recognition toward known proper nouns (e.g. "Sacrament", "Ward", "Bishop").
+3. Translation Layer: Google Translation API (optionally with Cloud Translation glossary for term consistency).
+4. Broadcast Layer: subtitles sent via WebSocket.
+5. Display Layer: browser control panel + large subtitle display.
+
+## Term Consistency Strategy
+
+This project splits the two concerns of term handling between layers that each do their job well:
+
+- **Local `config/glossary.csv` -> ASR phrase hints**: helps the recognizer "hear" proper nouns correctly. Without this, "Sacrament" can be transcribed as "secrement" and downstream translation has no way to recover.
+- **Cloud Translation glossary -> translation output**: if you need to force specific translations (e.g. "Sacrament" -> "圣餐" rather than Google's default), create a Cloud Translation glossary resource and set `TRANSLATION_GLOSSARY_ID`. Server-side glossary is more reliable than ad-hoc string replacement on the translated text.
+
+Earlier versions of this repo did post-translation string replacement locally. That approach was removed because it only worked when Google left source-language tokens in the output, which rarely happens for terms Google already knows.
 
 ## Estimated API Cost (90-minute session)
 

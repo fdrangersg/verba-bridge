@@ -8,20 +8,20 @@ const path = require('path');
 const config = require('./config');
 const { isValidDirection } = require('./constants');
 const { loadGlossaryFromCsv } = require('./glossary/glossaryLoader');
-const TerminologyEnforcer = require('./glossary/terminologyEnforcer');
+const GlossaryHints = require('./glossary/glossaryHints');
 const GoogleTranslator = require('./translation/googleTranslator');
 const SessionController = require('./session/sessionController');
 const SubtitleHub = require('./websocket/subtitleHub');
 
 const glossaryEntries = loadGlossaryFromCsv(config.glossaryPath);
-const terminologyEnforcer = new TerminologyEnforcer(glossaryEntries);
+const glossaryHints = new GlossaryHints(glossaryEntries);
 const translator = new GoogleTranslator({
   projectId: config.translationProjectId,
   location: config.translationLocation,
   glossaryId: config.translationGlossaryId,
 });
 const sessionController = new SessionController({
-  terminologyEnforcer,
+  glossaryHints,
   translator,
   defaultDirection: config.defaultDirection,
   asrSampleRate: config.asrSampleRate,

@@ -4,7 +4,7 @@ const { DIRECTION_CONFIG, DIRECTIONS, isValidDirection } = require('../constants
 
 class SessionController extends EventEmitter {
   constructor({
-    terminologyEnforcer,
+    glossaryHints,
     translator,
     defaultDirection,
     asrSampleRate,
@@ -13,7 +13,7 @@ class SessionController extends EventEmitter {
     recordProgram,
   }) {
     super();
-    this.terminologyEnforcer = terminologyEnforcer;
+    this.glossaryHints = glossaryHints;
     this.translator = translator;
 
     this.direction = defaultDirection || DIRECTIONS.EN_TO_ZH;
@@ -86,7 +86,7 @@ class SessionController extends EventEmitter {
 
   async startAsrPipeline() {
     const directionConfig = DIRECTION_CONFIG[this.direction];
-    const phraseHints = this.terminologyEnforcer.getPhraseHints(this.direction);
+    const phraseHints = this.glossaryHints.getPhraseHints(this.direction);
 
     this.asr = new GoogleStreamingAsr({
       languageCode: directionConfig.inputLanguageCode,
@@ -131,21 +131,11 @@ class SessionController extends EventEmitter {
 
     const directionAtCapture = this.direction;
     const directionConfig = DIRECTION_CONFIG[directionAtCapture];
-    const correctedSource = this.terminologyEnforcer.correctSourceText(
-      text,
-      directionAtCapture
-    );
 
-    const translationResult = await this.translator.translate(correctedSource, {
+    const translationResult = await this.translator.translate(text, {
       sourceLanguageCode: directionConfig.sourceLanguageCode,
       targetLanguageCode: directionConfig.targetLanguageCode,
     });
-
-    const enforcedTarget = this.terminologyEnforcer.enforceTargetText(
-      correctedSource,
-      translationResult.translatedText,
-      directionAtCapture
-    );
 
     const latencyMs = Math.max(0, Date.now() - asrTimestamp);
     this.recordLatency(latencyMs);
@@ -153,8 +143,8 @@ class SessionController extends EventEmitter {
     this.emit('subtitle', {
       timestamp: new Date().toISOString(),
       direction: directionAtCapture,
-      originalText: correctedSource,
-      translatedText: enforcedTarget,
+      originalText: text,
+      translatedText: translationResult.translatedText,
       latencyMs,
       usedCloudGlossary: translationResult.usedGlossary,
     });
@@ -233,7 +223,7 @@ class SessionController extends EventEmitter {
       inputLanguageCode: DIRECTION_CONFIG[this.direction].inputLanguageCode,
       lastLatencyMs: this.lastLatencyMs,
       averageLatencyMs: this.getAverageLatencyMs(),
-      activeHints: this.terminologyEnforcer.getPhraseHints(this.direction).length,
+      activeHints: this.glossaryHints.getPhraseHints(this.direction).length,
     };
   }
 }
