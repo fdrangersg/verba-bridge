@@ -116,6 +116,8 @@ class GoogleStreamingAsr extends EventEmitter {
         sampleRateHertz: this.sampleRateHertz,
         languageCode: this.languageCode,
         enableAutomaticPunctuation: true,
+        model: 'latest_long',
+        useEnhanced: true,
       },
       interimResults: this.interimResults,
     };
