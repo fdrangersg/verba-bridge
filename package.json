@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "node src/server.js",
-    "check": "node --check src/server.js && node --check src/session/sessionController.js && node --check src/asr/googleStreamingAsr.js && node --check src/translation/googleTranslator.js"
+    "check": "node --check src/server.js && node --check src/session/sessionController.js && node --check src/asr/googleStreamingAsr.js && node --check src/translation/googleTranslator.js && node --check src/recorder/transcriptRecorder.js"
   },
   "keywords": [
     "subtitle",

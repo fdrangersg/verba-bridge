@@ -12,6 +12,7 @@ const GlossaryHints = require('./glossary/glossaryHints');
 const GoogleTranslator = require('./translation/googleTranslator');
 const SessionController = require('./session/sessionController');
 const SubtitleHub = require('./websocket/subtitleHub');
+const TranscriptRecorder = require('./recorder/transcriptRecorder');
 
 const glossaryEntries = loadGlossaryFromCsv(config.glossaryPath);
 const glossaryHints = new GlossaryHints(glossaryEntries);
@@ -28,6 +29,9 @@ const sessionController = new SessionController({
   asrInterimResults: config.asrInterimResults,
   audioDevice: config.audioDevice,
   recordProgram: config.recordProgram,
+});
+const transcriptRecorder = new TranscriptRecorder({
+  outputDir: config.recordingDir,
 });
 
 function jsonResponse(res, statusCode, body) {
@@ -172,6 +176,7 @@ subtitleHub.on('connection', (count) => {
 });
 
 sessionController.on('subtitle', (payload) => {
+  transcriptRecorder.recordSubtitle(payload);
   subtitleHub.broadcast('subtitle', payload);
 });
 
@@ -180,6 +185,15 @@ sessionController.on('interim', (payload) => {
 });
 
 sessionController.on('status', (payload) => {
+  if (payload.running && !transcriptRecorder.isRecording()) {
+    const filePath = transcriptRecorder.start({ direction: payload.direction });
+    console.log(`Recording transcript to ${filePath}`);
+  } else if (!payload.running && transcriptRecorder.isRecording()) {
+    const closedPath = transcriptRecorder.stop();
+    if (closedPath) {
+      console.log(`Transcript saved: ${closedPath}`);
+    }
+  }
   subtitleHub.broadcast('status', payload);
 });
 
@@ -200,6 +214,7 @@ async function shutdown() {
     console.error('Error while stopping session:', error.message);
   }
 
+  transcriptRecorder.stop();
   subtitleHub.close();
 
   server.close(() => {

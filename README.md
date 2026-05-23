@@ -23,6 +23,7 @@ This repo is intentionally minimal, layered, and maintainable.
   - Direction switch
   - Connection status
   - Approximate latency
+- Per-session plain-text transcript saved to `recordings/` for post-meeting review
 
 ## Project Structure
 
@@ -38,6 +39,8 @@ verba-bridge/
       glossaryHints.js
     websocket/
       subtitleHub.js
+    recorder/
+      transcriptRecorder.js
     session/
       sessionController.js
     constants.js
@@ -96,6 +99,7 @@ Edit `.env`:
 - `DEFAULT_DIRECTION`
 - `PORT`
 - `GLOSSARY_PATH` (default `config/glossary.csv`)
+- `RECORDING_DIR` (default `recordings`; per-session transcripts land here)
 - `RECORD_PROGRAM` (optional: `sox`, `rec`, `arecord`; auto-detect if empty)
 - Optional `TRANSLATION_GLOSSARY_ID`
 
@@ -143,6 +147,35 @@ This project splits the two concerns of term handling between layers that each d
 - **Cloud Translation glossary -> translation output**: if you need to force specific translations (e.g. "Sacrament" -> "圣餐" rather than Google's default), create a Cloud Translation glossary resource and set `TRANSLATION_GLOSSARY_ID`. Server-side glossary is more reliable than ad-hoc string replacement on the translated text.
 
 Earlier versions of this repo did post-translation string replacement locally. That approach was removed because it only worked when Google left source-language tokens in the output, which rarely happens for terms Google already knows.
+
+## Session Transcripts
+
+Every session writes a plain-text transcript to `RECORDING_DIR` (default `recordings/`).
+
+- File is opened when you press **Start Session** and closed on **Stop Session** (or process shutdown).
+- Filename pattern: `YYYYMMDD-HHMMSS_<DIRECTION>.txt` (local time).
+- Each final subtitle is logged with timestamp, direction, source text, and translated text. Interim drafts are not recorded.
+- Switching direction mid-session does not rotate the file; the new direction is reflected on subsequent entries.
+
+Example transcript:
+
+```text
+=== VerbaBridge transcript ===
+Started:   2026-05-23 22:45:12
+Direction: EN→ZH
+
+[22:45:18] EN→ZH
+  Welcome, brothers and sisters.
+  欢迎各位弟兄姐妹。
+
+[22:45:23] EN→ZH
+  We will now bless the Sacrament.
+  我们现在为圣餐祝福。
+
+Ended:     2026-05-23 23:30:05
+```
+
+The `recordings/` directory is gitignored by default.
 
 ## Estimated API Cost (90-minute session)
 

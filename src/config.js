@@ -39,6 +39,7 @@ module.exports = {
   defaultDirection,
   googleCredentialsPath: process.env.GOOGLE_APPLICATION_CREDENTIALS || '',
   glossaryPath: resolveProjectPath(process.env.GLOSSARY_PATH, 'config/glossary.csv'),
+  recordingDir: resolveProjectPath(process.env.RECORDING_DIR, 'recordings'),
   asrSampleRate,
   asrInterimResults: process.env.ASR_INTERIM_RESULTS === 'true',
   audioDevice: process.env.AUDIO_DEVICE || '',
